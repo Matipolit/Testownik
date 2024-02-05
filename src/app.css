@@ -50,11 +50,8 @@ h1 {
 }
 
 .bottom{
-  position: fixed;
-  left: 50%;
-  bottom: 8px;
-  transform: translate(-50%, -50%);
-  margin: 0 auto;
+  position: sticky;
+  bottom: 0;
 }
 
 #app {
@@ -75,6 +72,7 @@ button {
   background-color: var(--background);
   cursor: pointer;
   transition: border-color 0.25s;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 button:hover {

@@ -93,7 +93,7 @@ export class Question {
     }
     const titleSplit = questionFile[1].split(".");
     this.number = parseInt(titleSplit[0]);
-    this.title = titleSplit[1];
+    this.title = titleSplit.slice(1).join();
 
     this.answers = [];
     let i = 2;

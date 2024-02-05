@@ -2,6 +2,8 @@
   import { onMount, afterUpdate } from 'svelte';
   let changedAnswers = [];
   export let question;
+  export let image;
+
   let markedAnswers = [];
   export let checked;
   export const onNextCallback = () => nextCallback();
@@ -56,8 +58,12 @@
     <number>{question.number}</number>
     <h2>{question.title}</h2>
   </title>
+  {#if image!=null}
+    <img alt="Ilustracja do pytania" style="max-width:80%; margin: 24px;" src={image[1]}/>
+  {/if}
   <div class="answers">
     {#each question.answers as answer, i}
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
       <answer 
         class:correct="{checked && changedAnswers[i] && question.correctAnswers[i]}"
         class:incorrect="{checked && changedAnswers[i] && !question.correctAnswers[i]}"

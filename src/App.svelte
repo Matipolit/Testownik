@@ -1,6 +1,7 @@
 <script>
   import { openDirectory, Question } from "./lib/lib";
   import Test from "./components/Test.svelte";
+  import Search from "./components/Search.svelte";
   let dbFile = null;
   let db = null;
   let images = null;
@@ -8,6 +9,7 @@
   let desiredLen = null;
   let wholeDb = false;
   let testing = false;
+  let searching = false;
   
   async function setDb(){
     wholeDb = false;
@@ -44,7 +46,7 @@
           desc = event.target.result;
         })
         reader.readAsText(file);
-      }else if(file.name.includes("jpg")){
+      }else if(file.name.includes("jpg") | file.name.includes("png")){
         const reader = new FileReader();
         reader.addEventListener('load', (event) => {
           images.push([file.name, event.target.result])
@@ -53,18 +55,23 @@
       }
     }
     console.log(db);
+    console.log(images);
   }
 </script>
 
 <main>
   <div>
     {#if testing}
+      <button on:click={() => {testing = false;}}>Stop test</button>
       <Test db={db} images={images}/>
+    {:else if searching}
+      <button on:click={() => {searching = false;}}>Stop search</button>
+      <Search db={db} />
     {:else}
       {#if !dbFile}
         <h1>Testownik online</h1>
         <h3>By Mateusz Polito</h3>
-        <p>Informacja: testownik obecnie nie wspiera obrazów</p>
+        <p>Już wspiera obrazy!</p>
         <button on:click={() => {setDb();}}>Wybierz bazę danych</button>
       {:else}
         {#if !wholeDb}
@@ -76,6 +83,7 @@
           {/if}
           <p>Ilość pytań: <b>{db.length}</b></p>
           <button on:click={() => {testing = true;}}>Zacznij test</button>
+          <button on:click={() => {testing = false; searching = true;}}>Przeszukaj bazę</button>
         {/if}
       {/if}
     {/if}

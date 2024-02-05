@@ -13,6 +13,8 @@
   let nextCallback;
   let checkAnswersCallback;
   let ended = false;
+  let skipQuestionNum = 0;
+  let curr_image = null;
 
   function nextQuestion(){
     if(correct){
@@ -20,19 +22,29 @@
       }else{
         negativePoints++;
     }
-    questionCorrects.push(correct)
-    if(currQuestion+1<db.length){
-      currQuestion ++;
+    questionCorrects.push(correct);
+    currQuestion ++;
+    setParams();
+  }
+
+  function setParams(){
+    if(currQuestion<db.length){
       checked = false;
       correct = false;
       currQuestionAnswers = [];
       console.log("Calling next callback");
       nextCallback();
+      if(db[currQuestion].hasImage) {
+        curr_image = images.find((img) => img[0] === db[currQuestion].imagePath)
+      }else{
+        curr_image = null;
+      }
     }else{
       ended = true;
       console.log("test ended");
     }
   }
+  
   function checkAnswers(){
     correct = checkAnswersCallback();
     checked = true;
@@ -41,6 +53,14 @@
 
 <test>
   {#if !ended}
+    <div>
+      <label for="skipToQuestion">Przejdź do pytania</label>
+      <input type="number" id="skipToQuestion" bind:value={skipQuestionNum} />
+      <button on:click={_ => {
+          currQuestion=skipQuestionNum;
+          setParams();
+        }} >Przejdź</button>
+    </div>
     {#if checked}
       {#if correct}
         <h2>Poprawna odpowiedź!</h2>
@@ -52,7 +72,9 @@
       <p>Pytanie: {currQuestion+1} / {db.length} </p>
       <p>Poprawne odpowiedzi: <b>{points}</b> | Niepoprawne odpowiedzi: <b>{negativePoints}</b></p>
     </info>
-    <Question question={db[currQuestion]} checked={checked} bind:onNextCallback={nextCallback} bind:onCheckAnswersCallback={checkAnswersCallback}/>
+    <Question question={db[currQuestion]} image={curr_image}
+      checked={checked} bind:onNextCallback={nextCallback} 
+      bind:onCheckAnswersCallback={checkAnswersCallback}/>
     <div class="bottom">
       <button on:click={() => checkAnswers()}>Sprawdź odpowiedź</button>
       <button disabled={!checked} on:click={() => nextQuestion()}>Następne pytanie</button>
