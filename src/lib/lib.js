@@ -86,7 +86,7 @@ export class Question {
     if(questionFile[0].includes(";")){
       this.hasImage = true;
       const lineSplit = questionFile[0].split("=");
-      this.imagePath = lineSplit[1];
+      this.imagePath = lineSplit[1].trim();
       this.correctAnswers = getCorrectAnswersFromString(lineSplit[0].split(";")[0]);
     }else{
       this.correctAnswers = getCorrectAnswersFromString(questionFile[0]);

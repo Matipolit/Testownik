@@ -13,7 +13,7 @@
   let nextCallback;
   let checkAnswersCallback;
   let ended = false;
-  let skipQuestionNum = 0;
+  let skipQuestionNum = 1;
   let curr_image = null;
 
   function nextQuestion(){
@@ -55,9 +55,9 @@
   {#if !ended}
     <div>
       <label for="skipToQuestion">Przejdź do pytania</label>
-      <input type="number" id="skipToQuestion" bind:value={skipQuestionNum} />
+      <input min="1" max={db.length} type="number" id="skipToQuestion" bind:value={skipQuestionNum} />
       <button on:click={_ => {
-          currQuestion=skipQuestionNum;
+          currQuestion=skipQuestionNum-1;
           setParams();
         }} >Przejdź</button>
     </div>
