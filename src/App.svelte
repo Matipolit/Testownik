@@ -32,7 +32,7 @@
       if(file.name.includes("txt")){
         const reader = new FileReader();
         reader.addEventListener('load', (event) => {
-          db.push(new Question(event.target.result));
+          db.push(new Question(event.target.result, file.name));
           if(db.length == desiredLen){
             db.sort((a, b) => {return(a.number > b.number)})
             wholeDb = true;
@@ -71,7 +71,7 @@
       {#if !dbFile}
         <h1>Testownik online</h1>
         <h3>By Mateusz Polito</h3>
-        <p>Już wspiera obrazy!</p>
+        <p>Uwaga: jeżeli po załadowaniu polskie znaki wyświetlają się błędnie, przekonwertuj wszystkie pliki na UTF-8</p>
         <button on:click={() => {setDb();}}>Wybierz bazę danych</button>
       {:else}
         {#if !wholeDb}
@@ -84,6 +84,9 @@
           <p>Ilość pytań: <b>{db.length}</b></p>
           <button on:click={() => {testing = true;}}>Zacznij test</button>
           <button on:click={() => {testing = false; searching = true;}}>Przeszukaj bazę</button>
+          <br>
+          <br>
+          <button on:click={() => {setDb();}}>Nowa baza</button>
         {/if}
       {/if}
     {/if}

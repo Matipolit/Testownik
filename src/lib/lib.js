@@ -81,8 +81,9 @@ function getCorrectAnswersFromString(correctString){
 }
 
 export class Question {
-  constructor(questionFile) {
-    questionFile = questionFile.replace('\t', '').split('\n');
+  constructor(questionFile, fileName) {
+    //questionFile = questionFile.replace('\t', '').split('\n');
+    questionFile = questionFile.split('\n');
     if(questionFile[0].includes(";")){
       this.hasImage = true;
       const lineSplit = questionFile[0].split("=");
@@ -91,9 +92,14 @@ export class Question {
     }else{
       this.correctAnswers = getCorrectAnswersFromString(questionFile[0]);
     }
-    const titleSplit = questionFile[1].split(".");
-    this.number = parseInt(titleSplit[0]);
-    this.title = titleSplit.slice(1).join();
+    if(questionFile[1].includes("\t")){
+      const titleSplit = questionFile[1].split("\t");
+      this.number = parseInt(titleSplit[0].split(".")[0]);
+      this.title = titleSplit.slice(1).join();
+    }else{
+      this.title = questionFile[1];
+      this.number = parseInt(fileName.split(".")[0]);
+    }
 
     this.answers = [];
     let i = 2;
