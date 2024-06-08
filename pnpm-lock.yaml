@@ -11,9 +11,6 @@ importers:
       '@leeoniya/ufuzzy':
         specifier: ^1.0.14
         version: 1.0.14
-      detect-file-encoding-and-language:
-        specifier: ^2.4.0
-        version: 2.4.0
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^2.0.2
@@ -184,10 +181,6 @@ packages:
   deepmerge@4.3.0:
     resolution: {integrity: sha512-z2wJZXrmeHdvYJp/Ux55wIjqo81G5Bp4c+oELTW+7ar6SogWHajt5a9gO3s3IDaGSAXjDk0vlQKN3rms8ab3og==}
     engines: {node: '>=0.10.0'}
-
-  detect-file-encoding-and-language@2.4.0:
-    resolution: {integrity: sha512-moFSAumrGlLCNU5jnaHyCzRUJJu0BCZunfL08iMbnDAgvNnxZad7+WZ26U2dsrIbGChlDPLKmEyEb2tEPUJFkw==}
-    hasBin: true
 
   esbuild@0.16.17:
     resolution: {integrity: sha512-G8LEkV0XzDMNwXKgM0Jwu3nY3lSTwSGY6XbxM9cr9+s0T/qSV1q1JVPBGzm3dcjhCic9+emZDmMffkwgPeOeLg==}
@@ -385,8 +378,6 @@ snapshots:
       ms: 2.1.2
 
   deepmerge@4.3.0: {}
-
-  detect-file-encoding-and-language@2.4.0: {}
 
   esbuild@0.16.17:
     optionalDependencies:
