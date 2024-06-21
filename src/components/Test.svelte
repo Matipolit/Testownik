@@ -92,4 +92,7 @@
     align-items: center;
     justify-content: center;
   }
+  #skipToQuestion {
+    width: 30px;
+  }
 </style>

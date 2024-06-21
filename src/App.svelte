@@ -1,5 +1,5 @@
 <script>
-  import { openDirectory, Question } from "./lib/lib";
+  import { openDirectory, openZip, Question } from "./lib/lib";
   import Test from "./components/Test.svelte";
   import Search from "./components/Search.svelte";
   let dbFile = null;
@@ -10,14 +10,45 @@
   let wholeDb = false;
   let testing = false;
   let searching = false;
+
+  let loading = false;
+  let unzipping = false;
+  let unzipped = 0;
+  let unzipping_goal = 0;
+
+  let startScreen = true;
   
-  async function setDb(){
+  let supportsFileSystemAccess = 'webkitdirectory' in document.createElement('input');
+
+  function removeDb(){
     wholeDb = false;
     testing = false;
+    searching = false;
+    startScreen = true;
     desc = null;
     db = [];
     images = [];
-    dbFile = await openDirectory();
+  }
+
+  function unzippingProgress(idx, length){
+    unzipped = idx;
+    unzipping_goal = length;
+  }
+
+  async function setDb(isZip){
+    wholeDb = false;
+    testing = false;
+    searching = false;
+    desc = null;
+    db = [];
+    images = [];
+    if (!isZip){
+      dbFile = await openDirectory();
+    }else{
+      unzipping = true;
+      dbFile = await openZip(unzippingProgress);
+      unzipping = false;
+    }
     let i = 0;
     let y = 0;
     while(i < dbFile.length){
@@ -30,12 +61,17 @@
     for(let i = 0; i < dbFile.length; i++){
       const file = dbFile[i];
       if(file.name.includes("txt")){
+        if(file.name.includes("answers_only")){
+          desiredLen -= 1;
+          continue;
+        }
         const reader = new FileReader();
         reader.addEventListener('load', (event) => {
           db.push(new Question(event.target.result, file.name));
           if(db.length == desiredLen){
             db.sort((a, b) => {return(a.number > b.number)})
             wholeDb = true;
+            loading = false;
           }
         })
         reader.readAsText(file);
@@ -68,14 +104,30 @@
       <button on:click={() => {searching = false;}}>Stop search</button>
       <Search db={db} />
     {:else}
-      {#if !dbFile}
+      {#if startScreen}
         <h1>Testownik online</h1>
         <h3>By Mateusz Polito</h3>
+        <button on:click={async () => {
+          loading = true;
+          startScreen = false;
+          setDb(false);
+          }}>Wybierz bazę danych</button>
+        {#if !supportsFileSystemAccess}
+          <p>Jest szansa, że Twoja przeglądarka nie wspiera otwierania folderów!</p>
+        {/if}
+        <button on:click={async () => {
+          loading = true;
+          startScreen = false;
+          await setDb(true);
+        }}>Przekaż bazę jako .zip</button>
         <p>Uwaga: jeżeli po załadowaniu polskie znaki wyświetlają się błędnie, przekonwertuj wszystkie pliki na UTF-8</p>
-        <button on:click={() => {setDb();}}>Wybierz bazę danych</button>
       {:else}
-        {#if !wholeDb}
+        {#if loading}
           <p>Ładowanie...</p>
+          {#if unzipping}
+            <p>Odpakowano {unzipped} z {unzipping_goal} plików</p>
+            <progress  value={unzipped} max={unzipping_goal}></progress>
+          {/if}
         {:else}
           <h3>Baza danych załadowana</h3>
           {#if desc}
@@ -86,7 +138,7 @@
           <button on:click={() => {testing = false; searching = true;}}>Przeszukaj bazę</button>
           <br>
           <br>
-          <button on:click={() => {setDb();}}>Nowa baza</button>
+          <button on:click={() => {removeDb();}}>Nowa baza</button>
         {/if}
       {/if}
     {/if}

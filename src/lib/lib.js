@@ -1,3 +1,5 @@
+import {ZipReader, BlobReader, BlobWriter} from "@zip.js/zip.js"
+
 export const openDirectory = async (mode = "read") => {
   // Feature detection. The API needs to be supported
   // and the app not run in an iframe.
@@ -70,6 +72,46 @@ export const openDirectory = async (mode = "read") => {
     }
   });
 };
+
+export async function openZip(progressCallback){
+
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".zip"
+    input.id = "zipInput"
+    input.click();
+
+    input.addEventListener("change", async () => {
+      let file = event.target.files[0];
+      if (!file){
+        resolve([]);
+      }
+      const reader = new ZipReader(new BlobReader(file));
+      const entries = await reader.getEntries();
+      const filesArray = [];
+
+      let i = 0;
+      for (const entry of entries) {
+        i += 1;
+        progressCallback(i, entries.length);
+        if (entry.directory) {
+          continue;
+        }
+
+        const blob = await entry.getData(new BlobWriter());
+        const fileObject = new File([blob], entry.filename, { type: blob.type });
+        filesArray.push(fileObject);
+      }
+
+      await reader.close();
+
+      // You can now use the filesArray which contains the files from the zip
+      console.log(filesArray);
+      resolve(filesArray);
+      })
+  });
+}
 
 function getCorrectAnswersFromString(correctString){
   let result = [];
