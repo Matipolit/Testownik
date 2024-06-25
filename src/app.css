@@ -16,7 +16,8 @@
   --background: #343442;
   --accent: #4D7DA8;
   --accent-2: #040404;
-
+  --accent-back: #334554;
+  --secondary: rgba(255, 255, 255, 0.7);
   --correct: #4DA878;
   --incorrect: #A84D4D;
   --notMarked: #A8844D;
@@ -75,6 +76,15 @@ button {
   box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.4);
 }
 
+.secondary{
+    font-weight: 300;
+}
+
+.action{
+  font-weight: 700;
+  background-color: var(--accent-back);
+}
+
 button:hover {
   border-color: var(--accent);
 }
@@ -91,6 +101,8 @@ button:focus-visible {
     
     --background: #E8E8ED;
     --accent: #B9CDDF;
+    --accent-back: #8dc0eb;
+    --secondary: rgba(0, 0, 0, 0.7);
 
     --correct:#9DD2B6;
     --incorrect:#D29D9D;

@@ -1,9 +1,10 @@
 <script>
-  import { openDirectory, openZip, Question } from "./lib/lib";
+  import { openDirectory, openZip, Question, shuffle } from "./lib/lib";
   import Test from "./components/Test.svelte";
   import Search from "./components/Search.svelte";
   let dbFile = null;
   let db = null;
+  let shuffDb = [];
   let images = null;
   let desc = null;
   let desiredLen = null;
@@ -17,6 +18,7 @@
   let unzipping_goal = 0;
 
   let startScreen = true;
+  let usingShuffled = false;
   
   let supportsFileSystemAccess = 'webkitdirectory' in document.createElement('input');
 
@@ -72,6 +74,8 @@
           db.push(new Question(event.target.result, file.name));
           if(db.length == desiredLen){
             db.sort((a, b) => {return(a.number > b.number)})
+            shuffDb = [...db];
+            shuffle(shuffDb)
             wholeDb = true;
             loading = false;
           }
@@ -95,6 +99,7 @@
         reader.readAsDataURL(file);
       }
     }
+    console.log("shuff len: ", shuffDb.length);
     console.log(db);
     console.log(images);
   }
@@ -103,16 +108,16 @@
 <main>
   <div>
     {#if testing}
-      <button on:click={() => {testing = false;}}>Stop test</button>
-      <Test db={db} images={images}/>
+      <button on:click={() => {testing = false;}}>Zatrzymaj test</button>
+      <Test db={usingShuffled ? shuffDb : db} images={images}/>
     {:else if searching}
-      <button on:click={() => {searching = false;}}>Stop search</button>
+      <button on:click={() => {searching = false;}}>Zatrzymaj szukanie</button>
       <Search db={db} />
     {:else}
       {#if startScreen}
         <h1>Testownik online</h1>
         <h3>By Mateusz Polito</h3>
-        <button on:click={async () => {
+        <button class="action" on:click={async () => {
           loading = true;
           startScreen = false;
           setDb(false);
@@ -120,7 +125,7 @@
         {#if !supportsFileSystemAccess}
           <p>Jest szansa, że Twoja przeglądarka nie wspiera otwierania folderów!</p>
         {/if}
-        <button on:click={async () => {
+        <button class="action" on:click={async () => {
           loading = true;
           startScreen = false;
           await setDb(true);
@@ -139,8 +144,15 @@
             <h2>{desc}</h2>
           {/if}
           <p>Ilość pytań: <b>{db.length}</b></p>
-          <button on:click={() => {testing = true;}}>Zacznij test</button>
-          <button on:click={() => {testing = false; searching = true;}}>Przeszukaj bazę</button>
+          <div>
+            <label>
+              <input type="checkbox" bind:checked={usingShuffled} />
+              Użyj pomieszanej bazy
+            </label>
+            <button class="action" on:click={() => {testing = true;}}>Zacznij test</button>
+            <button class="secondary" on:click={() => {shuffle(shuffDb);}}>Przemieszaj jeszcze raz</button>
+          </div>
+          <button class="action" on:click={() => {testing = false; searching = true;}}>Przeszukaj bazę</button>
           <br>
           <br>
           <button on:click={() => {removeDb();}}>Nowa baza</button>

@@ -36,7 +36,7 @@
     Przeszukaj bazę
 
   </h2>
-    <label for="inclAnswers">Przeszukaj pytania</label>
+    <label for="inclAnswers">Uwzględnij odpowiedzi</label>
     <input id="inclAnswers" type=checkbox bind:checked={includeAnswers} on:change={search(phrase)} />
     <input type=text bind:value={phrase} on:input={event => search(event.target.value)} />
     <div class="results">
