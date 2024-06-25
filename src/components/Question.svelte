@@ -90,6 +90,7 @@
     border-radius: 8px;
     border: 0.2em solid transparent;
     transition: border-color 0.1s;
+    cursor: pointer;
   }
   answer:hover{
     border-color: var(--accent);

@@ -92,7 +92,12 @@
     align-items: center;
     justify-content: center;
   }
+  .bottom{
+    width: 100%;
+    padding: 4px;
+    backdrop-filter: blur(18px) saturate(40%);
+  }
   #skipToQuestion {
-    width: 30px;
+    width: 64px;
   }
 </style>

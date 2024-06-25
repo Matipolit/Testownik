@@ -60,6 +60,8 @@
     desiredLen = y;
     for(let i = 0; i < dbFile.length; i++){
       const file = dbFile[i];
+
+      
       if(file.name.includes("txt")){
         if(file.name.includes("answers_only")){
           desiredLen -= 1;
@@ -85,7 +87,10 @@
       }else if(file.name.includes("jpg") | file.name.includes("png")){
         const reader = new FileReader();
         reader.addEventListener('load', (event) => {
-          images.push([file.name, event.target.result])
+          let fileNameRelative = file.name;
+          fileNameRelative = fileNameRelative.split("/");
+          fileNameRelative = fileNameRelative[fileNameRelative.length-1];
+          images.push([fileNameRelative, event.target.result])
         })
         reader.readAsDataURL(file);
       }
