@@ -12,4 +12,4 @@ A testing app compatible with the question database format used widely at WUST/P
 
 ## Use online
 
-[Link](https://sienkiewicza114.wroclaw.pl/src/mateusz/testownik/)
+[Link](https://testownik.vercel.app)
