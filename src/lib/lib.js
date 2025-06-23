@@ -41,10 +41,19 @@ export const openDirectory = async (mode = "read") => {
         const nestedPath = `${path}/${entry.name}`;
         if (entry.kind === "file") {
           files.push(
-            entry.getFile().then((file) => {
-              file.directoryHandle = dirHandle;
-              file.handle = entry;
-              return Object.defineProperty(file, "webkitRelativePath", {
+            entry.getFile().then(async (file) => {
+              const buffer = await file.arrayBuffer();
+              let text;
+              try {
+                text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+              } catch (e) {
+                console.log("File not in UTF-8, trying windows-1250", file.name);
+                text = new TextDecoder("windows-1250").decode(buffer);
+              }
+              const newFile = new File([text], file.name, { type: "text/plain" });
+              newFile.directoryHandle = dirHandle;
+              newFile.handle = entry;
+              return Object.defineProperty(newFile, "webkitRelativePath", {
                 configurable: true,
                 enumerable: true,
                 get: () => nestedPath,
@@ -79,9 +88,28 @@ export const openDirectory = async (mode = "read") => {
     input.type = 'file';
     input.webkitdirectory = true;
 
-    input.addEventListener('change', () => {
-      let files = Array.from(input.files);
-      resolve(files);
+    input.addEventListener('change', async () => {
+      const files = Array.from(input.files);
+      const processedFiles = await Promise.all(
+        files.map(async (file) => {
+          const buffer = await file.arrayBuffer();
+          let text;
+          try {
+            text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+          } catch (e) {
+            console.log("File not in UTF-8, trying windows-1250", file.name);
+            text = new TextDecoder("windows-1250").decode(buffer);
+          }
+          const newFile = new File([text], file.name, { type: "text/plain" });
+          Object.defineProperty(newFile, 'webkitRelativePath', {
+            configurable: true,
+            enumerable: true,
+            get: () => file.webkitRelativePath,
+          });
+          return newFile;
+        })
+      );
+      resolve(processedFiles);
     });
     if ('showPicker' in HTMLInputElement.prototype) {
       input.showPicker();
@@ -100,7 +128,7 @@ export async function openZip(progressCallback){
     input.id = "zipInput"
     input.click();
 
-    input.addEventListener("change", async () => {
+    input.addEventListener("change", async (event) => {
       let file = event.target.files[0];
       if (!file){
         resolve([]);
@@ -118,7 +146,15 @@ export async function openZip(progressCallback){
         }
 
         const blob = await entry.getData(new BlobWriter());
-        const fileObject = new File([blob], entry.filename, { type: blob.type });
+        const buffer = await blob.arrayBuffer();
+        let text;
+        try {
+          text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+        } catch (e) {
+          console.log("File not in UTF-8, trying windows-1250", entry.filename);
+          text = new TextDecoder("windows-1250").decode(buffer);
+        }
+        const fileObject = new File([text], entry.filename, { type: "text/plain" });
         filesArray.push(fileObject);
       }
 
@@ -142,6 +178,8 @@ function getCorrectAnswersFromString(correctString){
 
 export class Question {
   constructor(questionFile, fileName) {
+    console.log("Question file: ", questionFile);
+    console.log("File name: ", fileName);
     //questionFile = questionFile.replace('\t', '').split('\n');
     questionFile = questionFile.split('\n');
     if(questionFile[0].includes(";")){
@@ -158,7 +196,9 @@ export class Question {
       this.title = titleSplit.slice(1).join();
     }else{
       this.title = questionFile[1];
-      this.number = parseInt(fileName.split(".")[0]);
+      const nameParts = fileName.split('/');
+      const actualFileName = nameParts[nameParts.length - 1];
+      this.number = parseInt(actualFileName.split(".")[0]);
     }
 
     this.answers = [];

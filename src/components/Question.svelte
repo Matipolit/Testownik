@@ -1,87 +1,65 @@
 <script>
-  import { onMount, afterUpdate } from 'svelte';
-  let changedAnswers = [];
   export let question;
   export let image;
+  export let checked;
+  // parent does `bind:onNextCallback` and calls it when moving on,
+  // but because of our {#key}, it’s enough to let Svelte remount.
+  export const onNextCallback = () => {};
+  export const onCheckAnswersCallback = () =>
+    markedAnswers.every((v, i) => v === question.correctAnswers[i]);
 
   let markedAnswers = [];
-  export let checked;
-  export const onNextCallback = () => nextCallback();
-  export const onCheckAnswersCallback = () => checkAnswersCallback();
-  console.log("rerendering question");
-  let nextDone = false;
 
-  for(let i = 0; i < question.answers.length; i++){
-    console.log("initializing value " + i);
-    markedAnswers[i] = false;
-    changedAnswers[i] = false;
+  // re‐initialize when question changes
+  $: if (question) {
+    markedAnswers = Array(question.answers.length).fill(false);
   }
-
-  afterUpdate(() => {
-    if(!nextDone){
-      console.log("question after update: ");
-      console.log(question);
-      markedAnswers = [];
-      changedAnswers = [];
-      console.log("Reset marked answers: " + markedAnswers);
-      console.log("Reset changed answers: " + changedAnswers);
-      for(let i = 0; i < question.answers.length; i++){
-        console.log("resetting value " + i);
-        markedAnswers[i] = false;
-        changedAnswers[i] = false;
-      }
-    }
-    nextDone = true;
-  })
-
-  function nextCallback(){
-    console.log("Next callback called");
-    nextDone = false;
-  }
-
-  function checkAnswersCallback(){
-    console.log("Marked answers length: " + markedAnswers.length);
-    console.log("Marked answers: " + markedAnswers);
-    console.log("Correct answers: " + question.correctAnswers);
-    for(let i = 0; i < markedAnswers.length; i++){
-      if(markedAnswers[i] != question.correctAnswers[i]){
-        return false;
-      }
-    }
-    return true;
-  }
-
 </script>
 
-<question>
-  <title>
-    <number>{question.number}</number>
-    <h2>{question.title}</h2>
-  </title>
-  {#if image!=null}
-    <img alt="Ilustracja do pytania" style="max-width:80%; margin: 24px;" src={image[1]}/>
-  {/if}
-  <div class="answers">
-    {#each question.answers as answer, i}
-      <!-- svelte-ignore a11y-click-events-have-key-events -->
-      <answer 
-        class:correct="{checked && changedAnswers[i] && question.correctAnswers[i]}"
-        class:incorrect="{checked && changedAnswers[i] && !question.correctAnswers[i]}"
-        class:notMarked="{checked && !changedAnswers[i] && question.correctAnswers[i]}"
-        
-        on:click={() => {changedAnswers[i] = !changedAnswers[i]; markedAnswers[i]=!markedAnswers[i];}}>
-        <input type="checkbox" bind:checked={markedAnswers[i]} >
-        <p>{answer}</p>
-      </answer>
-    {/each}
+{#key question.number}
+  <div class="question">
+    <div class="title">
+      <div class="number">{question.number}</div>
+      <h2>{question.title}</h2>
+    </div>
+
+    {#if image}
+      <img
+        alt="Ilustracja do pytania"
+        style="max-width:80%; margin:24px"
+        src={image[1]}
+      />
+    {/if}
+
+    <div class="answers">
+      {#each question.answers as answer, i}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <div
+          class="answer"
+          class:correct={checked &&
+            markedAnswers[i] &&
+            question.correctAnswers[i]}
+          class:incorrect={checked &&
+            markedAnswers[i] &&
+            !question.correctAnswers[i]}
+          class:notMarked={checked &&
+            !markedAnswers[i] &&
+            question.correctAnswers[i]}
+          on:click={() => (markedAnswers[i] = !markedAnswers[i])}
+        >
+          <input type="checkbox" bind:checked={markedAnswers[i]} />
+          <p>{answer}</p>
+        </div>
+      {/each}
+    </div>
   </div>
-</question>
+{/key}
 
 <style>
-  p{
+  p {
     margin: 0;
   }
-  answer{
+  .answer {
     display: flex;
     border-radius: 8px;
     padding: 0.5rem;
@@ -92,10 +70,10 @@
     transition: border-color 0.1s;
     cursor: pointer;
   }
-  answer:hover{
+  .answer:hover {
     border-color: var(--accent);
   }
-  title{
+  .title {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -106,7 +84,7 @@
     border-style: solid;
     border-color: var(--accent);
   }
-  number{
+  .number {
     font-weight: bold;
     font-size: 1.5em;
     padding: 0.3em 0.6em;
@@ -114,18 +92,18 @@
     border: 0.2rem;
     border-radius: 8px;
     border-style: solid;
-    border-color: var(--accent);     
+    border-color: var(--accent);
   }
-  .answers{
+  .answers {
     margin: 1rem;
   }
-  .correct{
+  .correct {
     background-color: var(--correct);
   }
-  .incorrect{
+  .incorrect {
     background-color: var(--incorrect);
   }
-  .notMarked{
+  .notMarked {
     background-color: var(--notMarked);
   }
 </style>

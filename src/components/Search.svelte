@@ -1,62 +1,69 @@
 <script>
-  import uFuzzy from '@leeoniya/ufuzzy';
+  import uFuzzy from "@leeoniya/ufuzzy";
 
-  export let db;
-  let phrase = "";
-  let db_titles = db.map(question => question.title)
-  let db_answers = db.map(question => question.title + " " + question.answers.join(" "))
-  let results = [];
-  let includeAnswers = false;
+  let { db } = $props();
+  let phrase = $state("");
+  let db_titles = db.map((question) => question.title);
+  let db_answers = db.map(
+    (question) => question.title + " " + question.answers.join(" ")
+  );
+  let results = $state([]);
+  let includeAnswers = $state(false);
   let uf = new uFuzzy({});
 
   /**
-     * @param {string} phrase
-     */
-  function search(phrase){
+   * @param {string} phrase
+   */
+  function search(phrase) {
     results = [];
     let [idxs, info, order] = [null, null, null];
 
-    if(includeAnswers){
+    if (includeAnswers) {
       console.log("including answers");
       [idxs, info, order] = uf.search(db_answers, phrase);
-    }else{
+    } else {
       [idxs, info, order] = uf.search(db_titles, phrase);
     }
 
-    if(idxs != null){
+    if (idxs != null) {
       idxs.forEach((idx, i) => {
-        results[order[i] ]= db[idx];
-      })
+        results[order[i]] = db[idx];
+      });
     }
-  
   }
 </script>
-<div>
-  <h2>
-    Przeszukaj bazę
 
-  </h2>
-    <label for="inclAnswers">Uwzględnij odpowiedzi</label>
-    <input id="inclAnswers" type=checkbox bind:checked={includeAnswers} on:change={search(phrase)} />
-    <input type=text bind:value={phrase} on:input={event => search(event.target.value)} />
-    <div class="results">
+<div>
+  <h2>Przeszukaj bazę</h2>
+  <label for="inclAnswers">Uwzględnij odpowiedzi</label>
+  <input
+    id="inclAnswers"
+    type="checkbox"
+    bind:checked={includeAnswers}
+    onchange={() => search(phrase)}
+  />
+
+  <input type="text" bind:value={phrase} oninput={(event) => search(phrase)} />
+  <div class="results">
     {#each results as result, i}
       <div class="searchQuestion">
         <h3>{result.title}</h3>
-          <ul>
-            {#each result.answers as answer, y}
-              <li class={result.correctAnswers[y] ? "correct" : "incorrect"}>{answer}</li>
-            {/each}
-          </ul>
+        <ul>
+          {#each result.answers as answer, y}
+            <li class={result.correctAnswers[y] ? "correct" : "incorrect"}>
+              {answer}
+            </li>
+          {/each}
+        </ul>
       </div>
     {/each}
-    </div>
+  </div>
 </div>
 
 <style>
   ul {
     list-style-type: none;
-    padding:0;
+    padding: 0;
     margin: 0;
   }
   .results {
