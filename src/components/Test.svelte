@@ -72,15 +72,19 @@
   }
 </script>
 
-<div class="flex gap-4">
+<div
+  class="flex items-stretch md:flex-row flex-col-reverse gap-4 justify-between h-full p-2"
+>
   <div
-    class="flex-1/3 min-w-80 align-middle w-max flex flex-col gap-2 bg-gray-800 p-2 h-full"
+    class="md:flex-1/3 md:h-full md:w-max w-full min-w-80 align-middle flex flex-col gap-2 bg-gray-800 p-2 shrink-0 text-gray-100"
   >
     <progress value={currQuestion} max={db.length}></progress>
     {#if !ended}
-      <p class="text-xl">Pytanie: <b>{currQuestion + 1} / {db.length} </b></p>
+      <p class="text-xl text-gray-50">
+        Pytanie: <b>{currQuestion + 1} / {db.length} </b>
+      </p>
     {:else}
-      <p class="text-xl">Koniec testu</p>
+      <p class="text-xl text-gray-50">Koniec testu</p>
     {/if}
     <p>
       Poprawne: <b class="text-green-300">{points}</b> | Niepoprawne:
@@ -125,7 +129,7 @@
     </div>
   </div>
   <div
-    class="flex-2/3 align-middle w-max flex flex-col gap-2 justify-start bg-gray-800 p-2"
+    class="md:flex-2/3 w-full flex flex-col gap-2 justify-start bg-gray-800 inset-shadow-sm inset-shadow-gray-800/50 overflow-auto min-h-0"
   >
     {#if !ended}
       <Question

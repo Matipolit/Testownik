@@ -4,6 +4,7 @@
   import type { StoredDbMetadata } from "../lib/types";
   import { Question } from "../lib/types";
   import {
+    Calendar,
     Folder,
     FolderArchive,
     LucideMousePointerSquareDashed,
@@ -79,6 +80,7 @@
 
   function toggleAddDbPopup() {
     addingDbPopupVisible = !addingDbPopupVisible;
+    discardTempDB();
   }
 
   // when a db is loaded, it's stored here before saving
@@ -92,7 +94,14 @@
   let unzipped: number = $state(0);
   let unzipping_goal: number = $state(0);
 
+  let folderFilesRead: number = $state(0);
+  let folderFilesTotal: number = $state(0);
+
   function unzippingProgress(idx: number, length: number): void {
+    if (dbPickerState !== DBPickerState.LoadingZip) {
+      dbPickerState = DBPickerState.LoadingZip;
+      unzipping = true;
+    }
     unzipped = idx;
     unzipping_goal = length;
   }
@@ -106,6 +115,8 @@
     unzipping = false;
     unzipped = 0;
     unzipping_goal = 0;
+    folderFilesRead = 0;
+    folderFilesTotal = 0;
     dbPickerState = DBPickerState.StartScreen;
   }
 
@@ -114,12 +125,18 @@
 
     if (!isZip) {
       dbFile = await openDirectory();
+      if (!dbFile) {
+        dbPickerState = DBPickerState.StartScreen;
+        return;
+      }
       dbPickerState = DBPickerState.LoadingFolder;
+      folderFilesTotal = dbFile.length;
     } else {
-      dbPickerState = DBPickerState.LoadingZip;
-      unzipping = true;
       dbFile = await openZip(unzippingProgress);
-      unzipping = false;
+      if (!dbFile) {
+        discardTempDB(); // This will reset the state if user cancels
+        return;
+      }
     }
     if (!dbFile) {
       dbPickerState = DBPickerState.StartScreen;
@@ -140,6 +157,7 @@
       if (file.name.includes("txt")) {
         if (file.name.includes("answers_only")) {
           tempDesiredLen -= 1;
+          folderFilesRead++;
           continue;
         }
         const reader = new FileReader();
@@ -156,6 +174,7 @@
               dbPickerState = DBPickerState.LoadedTempDB;
             }
           }
+          folderFilesRead++;
         });
         reader.readAsText(file);
       } else if (file.name.includes("nfo")) {
@@ -163,6 +182,7 @@
         console.log("Reading tempDescription");
         reader.addEventListener("load", (event: ProgressEvent<FileReader>) => {
           tempDesc = event.target?.result as string;
+          folderFilesRead++;
         });
         reader.readAsText(file);
       } else if (file.name.includes("jpg") || file.name.includes("png")) {
@@ -173,6 +193,7 @@
           if (event.target?.result) {
             tempImages.push([fileNameRelative, event.target.result as string]);
           }
+          folderFilesRead++;
         });
         reader.readAsDataURL(file);
       }
@@ -182,7 +203,7 @@
   }
 </script>
 
-<div class="flex gap-2 flex-col bg-gray-800 p-2 h-min overflow-auto">
+<div class="flex gap-2 flex-col bg-gray-800 p-2 h-min">
   {#if addingDbPopupVisible}
     <div
       class="absolute inset-0 flex align-middle items-center justify-center z-50 bg-black/50 bg-opacity-50"
@@ -213,7 +234,8 @@
             >
           </div>
         {:else if dbPickerState === DBPickerState.LoadingFolder}
-          <p>Ładowanie...</p>
+          <p>Wczytano {folderFilesRead} z {folderFilesTotal} plików</p>
+          <progress value={folderFilesRead} max={folderFilesTotal}></progress>
         {:else if dbPickerState === DBPickerState.LoadingZip}
           <p>Odpakowano {unzipped} z {unzipping_goal} plików</p>
           <progress value={unzipped} max={unzipping_goal}></progress>
@@ -244,8 +266,12 @@
       </dialog>
     </div>
   {/if}
-  <h2 class="text-2xl">Zapisane bazy</h2>
-  <button onclick={toggleAddDbPopup}><PlusCircle /> Dodaj nową </button>
+  <div
+    class="flex items-center justify-between gap-4 sticky top-0 shadow-lg shadow-gray-800 bg-gray-800 pt-2 pb-2 mb-2"
+  >
+    <h2 class="text-2xl">Zapisane bazy</h2>
+    <button onclick={toggleAddDbPopup}><PlusCircle /> Dodaj </button>
+  </div>
   {#if dbs.length === 0}
     <p>Brak zapisanych baz.</p>
   {:else}
@@ -254,8 +280,11 @@
         <li class="bg-gray-700 p-2 gap-4 flex items-center justify-between">
           <div>
             <h3 class="text-xl">{db.name}</h3>
-            <p><b>{db.questionCount}</b> pytań</p>
-            <p>Zaimportowano: {new Date(db.createdAt).toLocaleString()}</p>
+            <p class="text-gray-100"><b>{db.questionCount}</b> pytań</p>
+            <div class="flex items-center gap-2 text-sm text-gray-400">
+              <Calendar size={16} />
+              <p>{new Date(db.createdAt).toLocaleString()}</p>
+            </div>
           </div>
           <div class="flex gap-2">
             <button onclick={() => loadDb(db.name)}><Upload /></button>

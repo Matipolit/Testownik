@@ -35,8 +35,10 @@
 </script>
 
 {#key question.number}
-  <div class="flex gap-4 flex-col w-full">
-    <h2 class="text-l">{question.title}</h2>
+  <div class="flex gap-4 flex-col w-full inset-shadow-gray-800">
+    <h2 class="text-l p-2 sticky top-0 bg-gray-800 shadow-gray-800 shadow-lg">
+      {question.title}
+    </h2>
 
     {#if image}
       <img
@@ -46,7 +48,7 @@
       />
     {/if}
 
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2 p-2">
       {#each question.answers as answer, i}
         <div
           role="button"

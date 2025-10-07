@@ -42,8 +42,10 @@
   });
 </script>
 
-<div class="bg-gray-800 p-2 overflow-auto">
-  <div class="flex gap-2 flex-col bg-gray-700 p-2 sticky top-0 shadow-lg/20">
+<div class="bg-gray-800 p-2 overflow-auto flex-grow min-h-0 flex flex-col">
+  <div
+    class="flex gap-2 flex-col bg-gray-700 p-2 sticky top-0 shadow-lg shadow-gray-800"
+  >
     <div class="flex gap-2 justify-between">
       <span class="flex gap-2">
         <SearchIcon />
@@ -59,10 +61,10 @@
     </div>
   </div>
 
-  <div class="flex flex-col gap-4 mt-4">
+  <div class="flex flex-col gap-4 mt-4 text-gray-100">
     {#each results as result}
       <div class="bg-gray-700 p-2">
-        <h3 class="mb-2">{result.title}</h3>
+        <p class="mb-2">{result.title}</p>
         <ul>
           {#each result.answers as answer, y}
             {#if result.correctAnswers[y]}
