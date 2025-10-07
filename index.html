@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Testownik</title>
   </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <body class="bg-gray-900 text-gray-100 flex flex-col h-screen overflow-hidden">
+    <div id="app" class="flex-grow overflow-hidden"></div>
+    <script type="module" src="/src/main.ts"></script>
   </body>
+  <footer class="flex align-middle justify-center static w-full bottom-0 bg-gray-900/50 backdrop-blur-md">
+    <p>Made by <a class="text-blue-300" href="https://matipolit.ovh">Mateusz Polito</a></p>
+  </footer>
 </html>

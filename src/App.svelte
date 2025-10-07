@@ -1,200 +1,88 @@
-<script>
-  import { openDirectory, openZip, Question, shuffle } from "./lib/lib";
+<script lang="ts">
+  import { openDirectory, openZip, shuffle } from "./lib/lib";
+  import { Question, type StoredDb, type StoredDbMetadata } from "./lib/types";
   import Test from "./components/Test.svelte";
   import Search from "./components/Search.svelte";
-  let dbFile = null;
-  let db = $state(null);
-  let shuffDb = $state([]);
-  let images = $state(null);
-  let desc = $state(null);
-  let desiredLen = null;
-  let wholeDb = false;
-  let testing = $state(false);
-  let searching = $state(false);
+  import DbPicker from "./components/DbPicker.svelte";
+  import { ListCheck, Pencil, SearchIcon } from "@lucide/svelte";
 
-  let loading = $state(false);
-  let unzipping = $state(false);
-  let unzipped = $state(0);
-  let unzipping_goal = $state(0);
-
-  let startScreen = $state(true);
-  let usingShuffled = $state(false);
-
-  let supportsFileSystemAccess =
-    "webkitdirectory" in document.createElement("input");
-
-  function removeDb() {
-    wholeDb = false;
-    testing = false;
-    searching = false;
-    startScreen = true;
-    desc = null;
-    db = [];
-    images = [];
+  enum AppState {
+    StartScreen,
+    Testing,
   }
 
-  function unzippingProgress(idx, length) {
-    unzipped = idx;
-    unzipping_goal = length;
-  }
+  let usingShuffled: boolean = $state(false);
 
-  async function setDb(isZip) {
-    wholeDb = false;
-    testing = false;
-    searching = false;
-    desc = null;
-    db = [];
-    images = [];
-    if (!isZip) {
-      dbFile = await openDirectory();
-    } else {
-      unzipping = true;
-      dbFile = await openZip(unzippingProgress);
-      unzipping = false;
-    }
-    let i = 0;
-    let y = 0;
-    while (i < dbFile.length) {
-      if (dbFile[i].name.includes("txt")) {
-        y++;
-      }
-      i++;
-    }
-    desiredLen = y;
-    for (let i = 0; i < dbFile.length; i++) {
-      const file = dbFile[i];
+  let appState = $state(AppState.StartScreen);
 
-      if (file.name.includes("txt")) {
-        if (file.name.includes("answers_only")) {
-          desiredLen -= 1;
-          continue;
-        }
-        const reader = new FileReader();
-        reader.addEventListener("load", (event) => {
-          db.push(new Question(event.target.result, file.name));
-          if (db.length == desiredLen) {
-            db.sort((a, b) => {
-              return a.number > b.number;
-            });
-            shuffDb = [...db];
-            shuffle(shuffDb);
-            wholeDb = true;
-            loading = false;
-          }
-        });
-        reader.readAsText(file);
-      } else if (file.name.includes("nfo")) {
-        const reader = new FileReader();
-        console.log("Reading description");
-        reader.addEventListener("load", (event) => {
-          desc = event.target.result;
-        });
-        reader.readAsText(file);
-      } else if (file.name.includes("jpg") | file.name.includes("png")) {
-        const reader = new FileReader();
-        reader.addEventListener("load", (event) => {
-          let fileNameRelative = file.name;
-          fileNameRelative = fileNameRelative.split("/");
-          fileNameRelative = fileNameRelative[fileNameRelative.length - 1];
-          images.push([fileNameRelative, event.target.result]);
-        });
-        reader.readAsDataURL(file);
-      }
-    }
-    console.log("shuff len: ", shuffDb.length);
-    console.log(db);
-    console.log(images);
+  let newDB: StoredDb | null = $state(null);
+  let newShuffDB: StoredDb | null = $state(null);
+  let newDBMetadata: StoredDbMetadata | null = $state(null);
+
+  function handlePassDBCallback(db: StoredDb, metadata: StoredDbMetadata) {
+    newDB = db;
+    newDBMetadata = metadata;
+    const questionsToShuff = [...db.questions];
+    shuffle(questionsToShuff);
+    newShuffDB = {
+      name: db.name,
+      questions: questionsToShuff,
+      images: db.images,
+      description: db.description,
+    };
+    console.log("Parent got db: " + newDBMetadata.name);
   }
 </script>
 
-<main>
-  <div>
-    {#if testing}
+<main class="p-4 h-full">
+  <div class="flex flex-col gap-4 h-full">
+    {#if appState === AppState.Testing && newDB !== null && newDBMetadata !== null && newShuffDB !== null}
       <button
         onclick={() => {
-          testing = false;
+          appState = AppState.StartScreen;
         }}>Zatrzymaj test</button
       >
-      <Test db={usingShuffled ? shuffDb : db} {images} />
-    {:else if searching}
-      <button
-        onclick={() => {
-          searching = false;
-        }}>Zatrzymaj szukanie</button
-      >
-      <Search {db} />
-    {:else if startScreen}
-      <h1>Testownik online</h1>
-      <h3>By Mateusz Polito</h3>
-      <button
-        class="action"
-        onclick={async () => {
-          loading = true;
-          startScreen = false;
-          setDb(false);
-        }}>Wybierz bazę danych</button
-      >
-      {#if !supportsFileSystemAccess}
-        <p>
-          Jest szansa, że Twoja przeglądarka nie wspiera otwierania folderów!
-        </p>
-      {/if}
-      <button
-        class="action"
-        onclick={async () => {
-          loading = true;
-          startScreen = false;
-          await setDb(true);
-        }}>Przekaż bazę jako .zip</button
-      >
-      <p>
-        Uwaga: jeżeli po załadowaniu polskie znaki wyświetlają się błędnie,
-        przekonwertuj wszystkie pliki na UTF-8
-      </p>
-    {:else if loading}
-      <p>Ładowanie...</p>
-      {#if unzipping}
-        <p>Odpakowano {unzipped} z {unzipping_goal} plików</p>
-        <progress value={unzipped} max={unzipping_goal}></progress>
-      {/if}
-    {:else}
-      <h3>Baza danych załadowana</h3>
-      {#if desc}
-        <h2>{desc}</h2>
-      {/if}
-      <p>Ilość pytań: <b>{db.length}</b></p>
+      <Test
+        db={usingShuffled ? newShuffDB.questions : newDB.questions}
+        images={newDB.images}
+      />
+    {:else if appState === AppState.StartScreen}
       <div>
-        <label>
-          <input type="checkbox" bind:checked={usingShuffled} />
-          Użyj pomieszanej bazy
-        </label>
-        <button
-          class="action"
-          onclick={() => {
-            testing = true;
-          }}>Zacznij test</button
-        >
-        <button
-          class="secondary"
-          onclick={() => {
-            shuffle(shuffDb);
-          }}>Przemieszaj jeszcze raz</button
-        >
+        <div class="flex gap-4">
+          <Pencil />
+          <h1 class="text-3xl bottom-2">Testownik</h1>
+        </div>
+        <p>
+          Aplikacja do testowania zgodna z większością baz pytań używanych na
+          PWR
+        </p>
       </div>
-      <button
-        class="action"
-        onclick={() => {
-          testing = false;
-          searching = true;
-        }}>Przeszukaj bazę</button
-      >
-      <br />
-      <br />
-      <button
-        onclick={() => {
-          removeDb();
-        }}>Nowa baza</button
-      >
+      <div class="flex gap-2 h-full flex-grow min-h-0">
+        <div
+          class="flex-1/2 align-middle w-max flex flex-col gap-2 justify-start"
+        >
+          <DbPicker passDBtoParent={handlePassDBCallback} />
+        </div>
+        <div
+          class="flex-1/2 align-middle w-max flex flex-col gap-2 justify-start"
+        >
+          {#if newDB === null || newDBMetadata === null}
+            <span>Brak wybranej bazy.</span>
+          {:else}
+            <h2 class="text-2xl">{newDBMetadata.name}</h2>
+            <p>{newDB.description}</p>
+            <p><b>{newDBMetadata.questionCount}</b> Pytań</p>
+            <div class="bg-gray-800 p-2">
+              <button
+                onclick={() => {
+                  appState = AppState.Testing;
+                }}><ListCheck />Rozpocznij test</button
+              >
+            </div>
+            <Search db={newDB.questions} />
+          {/if}
+        </div>
+      </div>
     {/if}
   </div>
 </main>

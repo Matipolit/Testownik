@@ -1,6 +1,7 @@
-import {ZipReader, BlobReader, BlobWriter} from "@zip.js/zip.js"
+import { ZipReader, BlobReader, BlobWriter } from "@zip.js/zip.js";
+import type { FileSystemDirectoryHandle } from "./types";
 
-export function shuffle(array) {
+export function shuffle(array: any[]): void {
   let currentIndex = array.length;
 
   // While there remain elements to shuffle...
@@ -12,13 +13,15 @@ export function shuffle(array) {
 
     // And swap it with the current element.
     [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex], array[currentIndex]];
+      array[randomIndex],
+      array[currentIndex],
+    ];
   }
 }
 
-
-
-export const openDirectory = async (mode = "read") => {
+export const openDirectory = async (
+  mode: "read" | "readwrite" = "read"
+): Promise<File[] | undefined> => {
   // Feature detection. The API needs to be supported
   // and the app not run in an iframe.
   const supportsFileSystemAccess =
@@ -32,36 +35,46 @@ export const openDirectory = async (mode = "read") => {
     })();
   // If the File System Access API is supported…
   if (supportsFileSystemAccess) {
-    let directoryStructure = undefined;
+    let directoryStructure: Promise<File[]> | undefined = undefined;
 
-    const getFiles = async (dirHandle, path = dirHandle.name) => {
-      const dirs = [];
-      const files = [];
+    const getFiles = async (
+      dirHandle: FileSystemDirectoryHandle,
+      path: string = dirHandle.name
+    ): Promise<File[]> => {
+      const dirs: Promise<File[]>[] = [];
+      const files: Promise<File>[] = [];
       for await (const entry of dirHandle.values()) {
         const nestedPath = `${path}/${entry.name}`;
         if (entry.kind === "file") {
           files.push(
-            entry.getFile().then(async (file) => {
+            (entry as FileSystemFileHandle).getFile().then(async (file) => {
               const buffer = await file.arrayBuffer();
-              let text;
+              let text: string;
               try {
-                text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+                text = new TextDecoder("utf-8", { fatal: true }).decode(
+                  buffer
+                );
               } catch (e) {
-                console.log("File not in UTF-8, trying windows-1250", file.name);
+                console.log(
+                  "File not in UTF-8, trying windows-1250",
+                  file.name
+                );
                 text = new TextDecoder("windows-1250").decode(buffer);
               }
-              const newFile = new File([text], file.name, { type: "text/plain" });
-              newFile.directoryHandle = dirHandle;
-              newFile.handle = entry;
+              const newFile = new File([text], file.name, {
+                type: "text/plain",
+              });
+              (newFile as any).directoryHandle = dirHandle;
+              (newFile as any).handle = entry;
               return Object.defineProperty(newFile, "webkitRelativePath", {
                 configurable: true,
                 enumerable: true,
                 get: () => nestedPath,
-              });
+              }) as File;
             })
           );
         } else if (entry.kind === "directory") {
-          dirs.push(getFiles(entry, nestedPath));
+          dirs.push(getFiles(entry as FileSystemDirectoryHandle, nestedPath));
         }
       }
       return [
@@ -71,11 +84,11 @@ export const openDirectory = async (mode = "read") => {
     };
 
     try {
-      const handle = await showDirectoryPicker({
+      const handle = await window.showDirectoryPicker({
         mode,
       });
-      directoryStructure = getFiles(handle, undefined);
-    } catch (err) {
+      directoryStructure = getFiles(handle);
+    } catch (err: any) {
       if (err.name !== "AbortError") {
         console.error(err.name, err.message);
       }
@@ -84,16 +97,19 @@ export const openDirectory = async (mode = "read") => {
   }
   // Fallback if the File System Access API is not supported.
   return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
+    const input = document.createElement("input");
+    input.type = "file";
     input.webkitdirectory = true;
 
-    input.addEventListener('change', async () => {
+    input.addEventListener("change", async () => {
+      if (!input.files) {
+        return resolve([]);
+      }
       const files = Array.from(input.files);
       const processedFiles = await Promise.all(
         files.map(async (file) => {
           const buffer = await file.arrayBuffer();
-          let text;
+          let text: string;
           try {
             text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
           } catch (e) {
@@ -101,7 +117,7 @@ export const openDirectory = async (mode = "read") => {
             text = new TextDecoder("windows-1250").decode(buffer);
           }
           const newFile = new File([text], file.name, { type: "text/plain" });
-          Object.defineProperty(newFile, 'webkitRelativePath', {
+          Object.defineProperty(newFile, "webkitRelativePath", {
             configurable: true,
             enumerable: true,
             get: () => file.webkitRelativePath,
@@ -119,42 +135,46 @@ export const openDirectory = async (mode = "read") => {
   });
 };
 
-export async function openZip(progressCallback){
-
+export async function openZip(
+  progressCallback: (progress: number, total: number) => void
+): Promise<File[]> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".zip"
-    input.id = "zipInput"
+    input.id = "zipInput";
     input.click();
 
     input.addEventListener("change", async (event) => {
-      let file = event.target.files[0];
-      if (!file){
-        resolve([]);
+      const target = event.target as HTMLInputElement;
+      if (!target.files || !target.files[0]) {
+        return resolve([]);
       }
+      let file = target.files[0];
       const reader = new ZipReader(new BlobReader(file));
       const entries = await reader.getEntries();
-      const filesArray = [];
+      const filesArray: File[] = [];
 
       let i = 0;
       for (const entry of entries) {
         i += 1;
         progressCallback(i, entries.length);
-        if (entry.directory) {
+        if (entry.directory || !entry.getData) {
           continue;
         }
 
         const blob = await entry.getData(new BlobWriter());
         const buffer = await blob.arrayBuffer();
-        let text;
+        let text: string;
         try {
           text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
         } catch (e) {
           console.log("File not in UTF-8, trying windows-1250", entry.filename);
           text = new TextDecoder("windows-1250").decode(buffer);
         }
-        const fileObject = new File([text], entry.filename, { type: "text/plain" });
+        const fileObject = new File([text], entry.filename, {
+          type: "text/plain",
+        });
         filesArray.push(fileObject);
       }
 
@@ -163,51 +183,6 @@ export async function openZip(progressCallback){
       // You can now use the filesArray which contains the files from the zip
       console.log(filesArray);
       resolve(filesArray);
-      })
+    });
   });
-}
-
-function getCorrectAnswersFromString(correctString){
-  let result = [];
-  for(let i = 0; i < correctString.length; i++){
-    if(correctString[i] == '1'){result.push(true);}
-    else if(correctString[i] == '0'){result.push(false);}
-  }
-  return result;
-}
-
-export class Question {
-  constructor(questionFile, fileName) {
-    console.log("Question file: ", questionFile);
-    console.log("File name: ", fileName);
-    //questionFile = questionFile.replace('\t', '').split('\n');
-    questionFile = questionFile.split('\n');
-    if(questionFile[0].includes(";")){
-      this.hasImage = true;
-      const lineSplit = questionFile[0].split("=");
-      this.imagePath = lineSplit[1].trim();
-      this.correctAnswers = getCorrectAnswersFromString(lineSplit[0].split(";")[0]);
-    }else{
-      this.correctAnswers = getCorrectAnswersFromString(questionFile[0]);
-    }
-    if(questionFile[1].includes("\t")){
-      const titleSplit = questionFile[1].split("\t");
-      this.number = parseInt(titleSplit[0].split(".")[0]);
-      this.title = titleSplit.slice(1).join();
-    }else{
-      this.title = questionFile[1];
-      const nameParts = fileName.split('/');
-      const actualFileName = nameParts[nameParts.length - 1];
-      this.number = parseInt(actualFileName.split(".")[0]);
-    }
-
-    this.answers = [];
-    let i = 2;
-    while (i < questionFile.length){
-      if(questionFile[i]!=""){
-        this.answers.push(questionFile[i].replace('\t', ''));
-      }
-      i++;
-    }
-  }
 }

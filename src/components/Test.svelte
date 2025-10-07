@@ -1,21 +1,24 @@
-<script>
+<script lang="ts">
   import Question from "./Question.svelte";
-  let { db, images } = $props();
+  import type { Question as QuestionType } from "../lib/types";
+  import { ChevronRight, CircleCheckBig, RotateCcw } from "@lucide/svelte";
 
-  let currQuestion = $state(0);
-  let points = $state(0);
-  let negativePoints = $state(0);
-  let questionCorrects = [];
-  let currQuestionAnswers = [];
-  let checked = $state(false);
-  let correct = $state(false);
-  let nextCallback = $state();
-  let checkAnswersCallback = $state();
-  let ended = $state(false);
-  let skipQuestionNum = $state(1);
-  let curr_image = $state(null);
+  let { db, images }: { db: QuestionType[]; images: [string, string][] } =
+    $props();
 
-  function nextQuestion() {
+  let currQuestion: number = $state(0);
+  let points: number = $state(0);
+  let negativePoints: number = $state(0);
+  let questionCorrects: boolean[] = [];
+  let checked: boolean = $state(false);
+  let correct: boolean = $state(false);
+  let nextCallback: () => void = $state(() => {});
+  let checkAnswersCallback: () => boolean = $state(() => false);
+  let ended: boolean = $state(false);
+  let skipQuestionNum: number = $state(1);
+  let curr_image: [string, string] | undefined = $state(undefined);
+
+  function nextQuestion(): void {
     if (correct) {
       points++;
     } else {
@@ -26,11 +29,10 @@
     setParams();
   }
 
-  function setParams() {
+  function setParams(): void {
     if (currQuestion < db.length) {
       checked = false;
       correct = false;
-      currQuestionAnswers = [];
       console.log("Calling next callback");
       nextCallback();
       if (db[currQuestion].hasImage) {
@@ -38,7 +40,7 @@
           (img) => img[0] === db[currQuestion].imagePath
         );
       } else {
-        curr_image = null;
+        curr_image = undefined;
       }
     } else {
       ended = true;
@@ -46,17 +48,49 @@
     }
   }
 
-  function checkAnswers() {
+  function resetTest(): void {
+    currQuestion = 0;
+    points = 0;
+    negativePoints = 0;
+    questionCorrects = [];
+    checked = false;
+    correct = false;
+    nextCallback = () => {};
+    checkAnswersCallback = () => false;
+    ended = false;
+    skipQuestionNum = 1;
+    if (db[0].hasImage) {
+      curr_image = images.find((img) => img[0] === db[0].imagePath);
+    } else {
+      curr_image = undefined;
+    }
+  }
+
+  function checkAnswers(): void {
     correct = checkAnswersCallback();
     checked = true;
   }
 </script>
 
-<div>
-  {#if !ended}
-    <div>
+<div class="flex gap-4">
+  <div
+    class="flex-1/3 min-w-80 align-middle w-max flex flex-col gap-2 bg-gray-800 p-2 h-full"
+  >
+    <progress value={currQuestion} max={db.length}></progress>
+    {#if !ended}
+      <p class="text-xl">Pytanie: <b>{currQuestion + 1} / {db.length} </b></p>
+    {:else}
+      <p class="text-xl">Koniec testu</p>
+    {/if}
+    <p>
+      Poprawne: <b class="text-green-300">{points}</b> | Niepoprawne:
+      <b class="text-red-300">{negativePoints}</b>
+    </p>
+
+    <div class="bg-gray-700 p-2">
       <label for="skipToQuestion">Przejdź do pytania</label>
       <input
+        class="bg-gray-600 p-1 ml-1 w-16"
         min="1"
         max={db.length}
         type="number"
@@ -77,48 +111,35 @@
         <h2>Niepoprawna odpowiedź!</h2>
       {/if}
     {/if}
-    <div class="info">
-      <p>Pytanie: {currQuestion + 1} / {db.length}</p>
-      <p>
-        Poprawne odpowiedzi: <b>{points}</b> | Niepoprawne odpowiedzi:
-        <b>{negativePoints}</b>
-      </p>
-    </div>
-    <Question
-      question={db[currQuestion]}
-      image={curr_image}
-      {checked}
-      bind:onNextCallback={nextCallback}
-      bind:onCheckAnswersCallback={checkAnswersCallback}
-    />
-    <div class="bottom">
-      <button onclick={() => checkAnswers()}>Sprawdź odpowiedź</button>
-      <button disabled={!checked} onclick={() => nextQuestion()}
-        >Następne pytanie</button
+    <div class="flex w-full justify-between gap-2 mt-auto pt-4">
+      <button
+        onclick={() => checkAnswers()}
+        class="flex items-center gap-1 w-1/2 justify-center"
+        ><CircleCheckBig />Sprawdź odpowiedź</button
+      >
+      <button
+        class="disabled:bg-gray-700 flex items-center gap-1 w-1/2 justify-center"
+        disabled={!checked || ended}
+        onclick={() => nextQuestion()}><ChevronRight />Następne pytanie</button
       >
     </div>
-  {:else}
-    <p>Test zakończony</p>
-    <p>
-      Poprawne odpowiedzi: <b>{points}</b> | Niepoprawne odpowiedzi:
-      <b>{negativePoints}</b>
-    </p>
-  {/if}
+  </div>
+  <div
+    class="flex-2/3 align-middle w-max flex flex-col gap-2 justify-start bg-gray-800 p-2"
+  >
+    {#if !ended}
+      <Question
+        question={db[currQuestion]}
+        image={curr_image}
+        {checked}
+        bind:onNextCallback={nextCallback}
+        bind:onCheckAnswersCallback={checkAnswersCallback}
+      />
+    {:else}
+      <p>Test zakończony</p>
+      <button onclick={resetTest}><RotateCcw />Testuj ponownie</button>
+    {/if}
+  </div>
 </div>
 
-<style>
-  .info {
-    display: flex;
-    gap: 32px;
-    align-items: center;
-    justify-content: center;
-  }
-  .bottom {
-    width: 100%;
-    padding: 4px;
-    backdrop-filter: blur(18px) saturate(40%);
-  }
-  #skipToQuestion {
-    width: 64px;
-  }
-</style>
+<style></style>

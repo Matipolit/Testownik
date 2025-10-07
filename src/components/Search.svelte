@@ -1,86 +1,82 @@
-<script>
+<script lang="ts">
   import uFuzzy from "@leeoniya/ufuzzy";
+  import type { Question } from "../lib/types";
+  import { SearchIcon } from "@lucide/svelte";
 
-  let { db } = $props();
-  let phrase = $state("");
-  let db_titles = db.map((question) => question.title);
-  let db_answers = db.map(
-    (question) => question.title + " " + question.answers.join(" ")
+  let { db } = $props<{ db: Question[] }>();
+
+  let phrase: string = $state("");
+  let includeAnswers: boolean = $state(false);
+
+  const db_titles = $derived(db.map((question: Question) => question.title));
+  const db_answers = $derived(
+    db.map(
+      (question: Question) => question.title + " " + question.answers.join(" ")
+    )
   );
-  let results = $state([]);
-  let includeAnswers = $state(false);
-  let uf = new uFuzzy({});
 
-  /**
-   * @param {string} phrase
-   */
-  function search(phrase) {
-    results = [];
-    let [idxs, info, order] = [null, null, null];
+  let results: Question[] = $state([]);
 
-    if (includeAnswers) {
-      console.log("including answers");
-      [idxs, info, order] = uf.search(db_answers, phrase);
-    } else {
-      [idxs, info, order] = uf.search(db_titles, phrase);
+  const uf = new uFuzzy({});
+
+  function search() {
+    if (!phrase) {
+      results = db; // If search is empty, show all questions from the current db
+      return;
     }
 
-    if (idxs != null) {
-      idxs.forEach((idx, i) => {
-        results[order[i]] = db[idx];
-      });
+    const haystack = includeAnswers ? db_answers : db_titles;
+    const [idxs, info, order] = uf.search(haystack, phrase);
+
+    if (idxs && order) {
+      results = order.map((i) => db[idxs[i]]);
+    } else {
+      results = [];
     }
   }
+
+  // This will automatically re-run the search whenever the user types,
+  // toggles the checkbox, OR when a new `db` is passed in.
+  $effect(() => {
+    search();
+  });
 </script>
 
-<div>
-  <h2>Przeszukaj bazę</h2>
-  <label for="inclAnswers">Uwzględnij odpowiedzi</label>
-  <input
-    id="inclAnswers"
-    type="checkbox"
-    bind:checked={includeAnswers}
-    onchange={() => search(phrase)}
-  />
+<div class="bg-gray-800 p-2 overflow-auto">
+  <div class="flex gap-2 flex-col bg-gray-700 p-2 sticky top-0 shadow-lg/20">
+    <div class="flex gap-2 justify-between">
+      <span class="flex gap-2">
+        <SearchIcon />
+        <h2 class="text-xl">Przeszukaj</h2>
+      </span>
+      <span>
+        <input id="inclAnswers" type="checkbox" bind:checked={includeAnswers} />
+        <label for="inclAnswers">Uwzględnij odpowiedzi</label>
+      </span>
+    </div>
+    <div>
+      <input class="bg-gray-600 w-full" type="text" bind:value={phrase} />
+    </div>
+  </div>
 
-  <input type="text" bind:value={phrase} oninput={(event) => search(phrase)} />
-  <div class="results">
-    {#each results as result, i}
-      <div class="searchQuestion">
-        <h3>{result.title}</h3>
+  <div class="flex flex-col gap-4 mt-4">
+    {#each results as result}
+      <div class="bg-gray-700 p-2">
+        <h3 class="mb-2">{result.title}</h3>
         <ul>
           {#each result.answers as answer, y}
-            <li class={result.correctAnswers[y] ? "correct" : "incorrect"}>
-              {answer}
-            </li>
+            {#if result.correctAnswers[y]}
+              <li class="text-green-300">
+                {answer}
+              </li>
+            {:else}
+              <li class="text-red-300">
+                {answer}
+              </li>
+            {/if}
           {/each}
         </ul>
       </div>
     {/each}
   </div>
 </div>
-
-<style>
-  ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-  }
-  .results {
-    display: flex;
-    gap: 8px;
-    flex-direction: column;
-  }
-  .searchQuestion {
-    background-color: var(--background);
-    border: solid 2px var(--accent);
-    padding: 0.5rem;
-    border-radius: 8px;
-  }
-  .correct {
-    color: var(--correct);
-  }
-  .incorrect {
-    color: var(--incorrect);
-  }
-</style>
