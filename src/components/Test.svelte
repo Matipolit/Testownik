@@ -1,7 +1,12 @@
 <script lang="ts">
   import Question from "./Question.svelte";
   import type { Question as QuestionType } from "../lib/types";
-  import { ChevronRight, CircleCheckBig, RotateCcw } from "@lucide/svelte";
+  import {
+    ArrowRightCircle,
+    ChevronRight,
+    CircleCheckBig,
+    RotateCcw,
+  } from "@lucide/svelte";
 
   let { db, images }: { db: QuestionType[]; images: [string, string][] } =
     $props();
@@ -19,11 +24,6 @@
   let curr_image: [string, string] | undefined = $state(undefined);
 
   function nextQuestion(): void {
-    if (correct) {
-      points++;
-    } else {
-      negativePoints++;
-    }
     questionCorrects.push(correct);
     currQuestion++;
     setParams();
@@ -69,6 +69,11 @@
   function checkAnswers(): void {
     correct = checkAnswersCallback();
     checked = true;
+    if (correct) {
+      points++;
+    } else {
+      negativePoints++;
+    }
   }
 </script>
 
@@ -76,7 +81,10 @@
   class="flex items-stretch md:flex-row flex-col-reverse gap-4 justify-between h-full p-2"
 >
   <div
-    class="md:flex-1/3 md:h-full md:w-max w-full min-w-80 align-middle flex flex-col gap-2 bg-gray-800 p-2 shrink-0 text-gray-100"
+    class="md:flex-1/3 md:h-full md:w-max w-full min-w-80 align-middle flex flex-col gap-2 p-2 shrink-0 text-gray-100 transition-colors duration-200"
+    class:bg-green-900={checked && correct}
+    class:bg-red-900={checked && !correct}
+    class:bg-gray-800={!checked}
   >
     <progress value={currQuestion} max={db.length}></progress>
     {#if !ended}
@@ -91,30 +99,25 @@
       <b class="text-red-300">{negativePoints}</b>
     </p>
 
-    <div class="bg-gray-700 p-2">
-      <label for="skipToQuestion">Przejdź do pytania</label>
-      <input
-        class="bg-gray-600 p-1 ml-1 w-16"
-        min="1"
-        max={db.length}
-        type="number"
-        id="skipToQuestion"
-        bind:value={skipQuestionNum}
-      />
+    <div class="bg-gray-700 p-2 flex gap-4 items-center justify-between">
+      <div>
+        <label for="skipToQuestion">Przejdź do pytania</label>
+        <input
+          class="bg-gray-600 p-1 ml-1 w-16"
+          min="1"
+          max={db.length}
+          type="number"
+          id="skipToQuestion"
+          bind:value={skipQuestionNum}
+        />
+      </div>
       <button
         onclick={(_) => {
           currQuestion = skipQuestionNum - 1;
           setParams();
-        }}>Przejdź</button
+        }}><ArrowRightCircle /></button
       >
     </div>
-    {#if checked}
-      {#if correct}
-        <h2>Poprawna odpowiedź!</h2>
-      {:else}
-        <h2>Niepoprawna odpowiedź!</h2>
-      {/if}
-    {/if}
     <div class="flex w-full justify-between gap-2 mt-auto pt-4">
       <button
         onclick={() => checkAnswers()}
