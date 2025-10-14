@@ -15,19 +15,19 @@
 
   let appState = $state(AppState.StartScreen);
 
-  let selectedDb: StoredDb | null = $state(null);
+  let normalDB: StoredDb | null = $state(null);
   let shuffDB: StoredDb | null = $state(null);
   let dbMetadata: StoredDbMetadata | null = $state(null);
 
   function unloadDB() {
-    selectedDb = null;
+    normalDB = null;
     dbMetadata = null;
     shuffDB = null;
     appState = AppState.StartScreen;
   }
 
   function handlePassDBCallback(db: StoredDb, metadata: StoredDbMetadata) {
-    selectedDb = db;
+    normalDB = db;
     console.log("Received DB and metadata from DbPicker:");
     console.log("DB: ");
     console.log(db);
@@ -54,11 +54,11 @@
         <Pencil />
         <h1 class="text-2xl">Testownik</h1>
       </div>
-      {#if selectedDb !== null && dbMetadata !== null && appState === AppState.StartScreen}
+      {#if normalDB !== null && dbMetadata !== null && appState === AppState.StartScreen}
         <button class="md:hidden flex gap-2" onclick={unloadDB}>
           <ArrowLeft /> Wróć
         </button>
-      {:else if selectedDb !== null && dbMetadata !== null && appState === AppState.Testing}
+      {:else if normalDB !== null && dbMetadata !== null && appState === AppState.Testing}
         <button
           onclick={() => {
             appState = AppState.StartScreen;
@@ -69,28 +69,28 @@
       {/if}
     </div>
 
-    {#if appState === AppState.Testing && selectedDb !== null && dbMetadata !== null && shuffDB !== null}
+    {#if appState === AppState.Testing && normalDB !== null && dbMetadata !== null && shuffDB !== null}
       <div class="flex-grow min-h-0">
         <Test
-          db={usingShuffled ? shuffDB.questions : selectedDb.questions}
-          images={selectedDb.images}
+          db={usingShuffled ? shuffDB.questions : normalDB.questions}
+          images={normalDB.images}
         />
       </div>
     {:else if appState === AppState.StartScreen}
       <div class="flex flex-col md:flex-row gap-2 h-full flex-grow min-h-0 p-2">
         <div
           class="w-full md:flex-1/2 flex flex-col gap-2 justify-start overflow-auto"
-          class:hidden={selectedDb !== null}
-          class:md:flex={selectedDb !== null}
+          class:hidden={normalDB !== null}
+          class:md:flex={normalDB !== null}
         >
           <DbPicker passDBtoParent={handlePassDBCallback} />
         </div>
         <div
           class="w-full md:w-max md:flex-1/2 flex flex-col gap-2 justify-start min-h-0"
-          class:hidden={selectedDb === null}
-          class:md:flex={selectedDb === null}
+          class:hidden={normalDB === null}
+          class:md:flex={normalDB === null}
         >
-          {#if selectedDb === null || dbMetadata === null}
+          {#if normalDB === null || dbMetadata === null}
             <span>Brak wybranej bazy.</span>
           {:else}
             <div class="flex justify-between items-center">
@@ -99,14 +99,24 @@
 
             <p>{dbMetadata.description}</p>
             <p><b>{dbMetadata.questionCount}</b> Pytań</p>
-            <div class="bg-gray-800 p-2">
+            <div
+              class="bg-gray-800 p-2 flex gap-4 justify-between items-center"
+            >
               <button
                 onclick={() => {
                   appState = AppState.Testing;
                 }}><ListCheck />Rozpocznij test</button
               >
+              <span>
+                <input
+                  id="inclAnswers"
+                  type="checkbox"
+                  bind:checked={usingShuffled}
+                />
+                <label for="inclAnswers">Przemieszana baza</label>
+              </span>
             </div>
-            <Search db={selectedDb.questions} images={selectedDb.images} />
+            <Search db={normalDB.questions} images={normalDB.images} />
           {/if}
         </div>
       </div>

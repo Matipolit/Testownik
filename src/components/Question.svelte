@@ -41,11 +41,12 @@
     </h2>
 
     {#if image}
-      <img
-        alt="Ilustracja do pytania"
-        style="max-width:80%; margin:24px"
-        src={image}
-      />
+      <div>
+        <img alt="Ilustracja do pytania" class="w-full p-2" src={image} />
+        <p class="text-sm text-gray-400 w-full text-right pr-2">
+          {question.imagePath}
+        </p>
+      </div>
     {/if}
 
     <div class="flex flex-col gap-2 p-2">

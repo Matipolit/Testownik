@@ -93,7 +93,9 @@
             src={imageUrls.get(result.imagePath)!}
             alt={`Image for question ${result.number}`}
           />
-          <p>{result.imagePath}</p>
+          <p class="text-sm text-gray-400 w-full text-right">
+            {result.imagePath}
+          </p>
         {/if}
         <ul>
           {#each result.answers as answer, y}

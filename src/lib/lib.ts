@@ -19,6 +19,34 @@ export function shuffle(array: any[]): void {
   }
 }
 
+async function processFile(fileData: Blob, fileName: string): Promise<File> {
+  const lowerCaseFileName = fileName.toLowerCase();
+
+  if (
+    lowerCaseFileName.endsWith(".jpg") ||
+    lowerCaseFileName.endsWith(".jpeg") ||
+    lowerCaseFileName.endsWith(".png")
+  ) {
+    // If it's already a File object with the correct name, we can just return it.
+    if (fileData instanceof File && fileData.name === fileName) {
+      return fileData;
+    }
+    return new File([fileData], fileName, { type: fileData.type });
+  } else {
+    const buffer = await fileData.arrayBuffer();
+    let text: string;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+    } catch (e) {
+      console.log("File not in UTF-8, trying windows-1250", fileName);
+      text = new TextDecoder("windows-1250").decode(buffer);
+    }
+    return new File([text], fileName, {
+      type: "text/plain",
+    });
+  }
+}
+
 export const openDirectory = async (
   mode: "read" | "readwrite" = "read"
 ): Promise<File[] | undefined> => {
@@ -48,32 +76,7 @@ export const openDirectory = async (
         if (entry.kind === "file") {
           files.push(
             (entry as FileSystemFileHandle).getFile().then(async (file) => {
-              const fileName = file.name.toLowerCase();
-              let newFile: File;
-              if (
-                fileName.endsWith(".jpg") ||
-                fileName.endsWith(".jpeg") ||
-                fileName.endsWith(".png")
-              ) {
-                newFile = file;
-              } else {
-                const buffer = await file.arrayBuffer();
-                let text: string;
-                try {
-                  text = new TextDecoder("utf-8", { fatal: true }).decode(
-                    buffer
-                  );
-                } catch (e) {
-                  console.log(
-                    "File not in UTF-8, trying windows-1250",
-                    file.name
-                  );
-                  text = new TextDecoder("windows-1250").decode(buffer);
-                }
-                newFile = new File([text], file.name, {
-                  type: "text/plain",
-                });
-              }
+              const newFile = await processFile(file, file.name);
 
               (newFile as any).directoryHandle = dirHandle;
               (newFile as any).handle = entry;
@@ -119,26 +122,7 @@ export const openDirectory = async (
       const files = Array.from(input.files);
       const processedFiles = await Promise.all(
         files.map(async (file) => {
-          const fileName = file.name.toLowerCase();
-          let newFile: File;
-
-          if (
-            fileName.endsWith(".jpg") ||
-            fileName.endsWith(".jpeg") ||
-            fileName.endsWith(".png")
-          ) {
-            newFile = file;
-          } else {
-            const buffer = await file.arrayBuffer();
-            let text: string;
-            try {
-              text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
-            } catch (e) {
-              console.log("File not in UTF-8, trying windows-1250", file.name);
-              text = new TextDecoder("windows-1250").decode(buffer);
-            }
-            newFile = new File([text], file.name, { type: "text/plain" });
-          }
+          const newFile = await processFile(file, file.name);
 
           Object.defineProperty(newFile, "webkitRelativePath", {
             configurable: true,
@@ -150,7 +134,7 @@ export const openDirectory = async (
       );
       resolve(processedFiles);
     });
-    if ('showPicker' in HTMLInputElement.prototype) {
+    if ("showPicker" in HTMLInputElement.prototype) {
       input.showPicker();
     } else {
       input.click();
@@ -187,31 +171,7 @@ export async function openZip(
         }
 
         const blob = await entry.getData(new BlobWriter());
-        const fileName = entry.filename.toLowerCase();
-        let fileObject: File;
-
-        if (
-          fileName.endsWith(".jpg") ||
-          fileName.endsWith(".jpeg") ||
-          fileName.endsWith(".png")
-        ) {
-          fileObject = new File([blob], entry.filename, { type: blob.type });
-        } else {
-          const buffer = await blob.arrayBuffer();
-          let text: string;
-          try {
-            text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
-          } catch (e) {
-            console.log(
-              "File not in UTF-8, trying windows-1250",
-              entry.filename
-            );
-            text = new TextDecoder("windows-1250").decode(buffer);
-          }
-          fileObject = new File([text], entry.filename, {
-            type: "text/plain",
-          });
-        }
+        const fileObject = await processFile(blob, entry.filename);
         filesArray.push(fileObject);
       }
 

@@ -173,7 +173,7 @@
         reader.readAsText(file);
       } else if (file.name.includes("nfo")) {
         const reader = new FileReader();
-        console.log("Reading tempDescription");
+        console.log("Reading description");
         reader.addEventListener("load", (event: ProgressEvent<FileReader>) => {
           tempDesc = event.target?.result as string;
           folderFilesRead++;

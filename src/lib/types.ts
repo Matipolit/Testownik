@@ -20,6 +20,11 @@ export class Question {
     } else {
       this.correctAnswers = getCorrectAnswersFromString(questionFileLines[0]);
     }
+    if (questionFileLines[1].includes("[img]")){
+      this.hasImage = true;
+      this.imagePath = questionFileLines[1].replace("[img]", "").replace("[/img]", "").trim();
+      questionFileLines.splice(1, 1);
+    }
     if (questionFileLines[1].includes("\t")) {
       const titleSplit = questionFileLines[1].split("\t");
       this.number = parseInt(titleSplit[0].split(".")[0]);
