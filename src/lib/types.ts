@@ -57,12 +57,12 @@ function getCorrectAnswersFromString(correctString: string): boolean[] {
 export interface StoredDb {
   name: string;
   questions: Question[];
-  images: [string, string][];
-  description: string | null;
+  images: [string, Blob][];
 }
 
 export interface StoredDbMetadata {
   name: string;
+  description: string;
   questionCount: number;
   createdAt: Date;
 }

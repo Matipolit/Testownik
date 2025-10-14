@@ -31,18 +31,18 @@
   // functions for dbs in localStorage
   let dbs: StoredDbMetadata[] = $state([]);
 
-  onMount(() => {
-    dbs = getDbList();
+  onMount(async () => {
+    dbs = await getDbList();
     console.log("Loaded dbs " + JSON.stringify(dbs));
   });
 
-  export function refresh() {
-    dbs = getDbList();
+  export async function refresh() {
+    dbs = await getDbList();
   }
 
-  function loadDb(name: string) {
-    let metadata = dbs.filter((db) => db.name === name)[0];
-    let db = getDb(name);
+  async function loadDb(name: string) {
+    let metadata = $state.snapshot(dbs.filter((db) => db.name === name)[0]);
+    let db = await getDb(name);
     if (db != null && metadata != null) {
       passDBtoParent(db, metadata);
     } else {
@@ -52,26 +52,20 @@
     }
   }
 
-  function handleDelete(name: string) {
+  async function handleDelete(name: string) {
     deleteDb(name);
-    dbs = getDbList();
+    dbs = await getDbList();
   }
 
-  function saveTempDB(
+  async function saveTempDB(
     questions: Question[],
-    images: [string, string][],
+    images: [string, File][],
     name: string,
     desc: string
   ) {
     console.log("Saving db " + name);
-    const db = {
-      name: name,
-      questions: questions,
-      images: images,
-      description: desc,
-    };
-    saveDb(db);
-    dbs = getDbList();
+    saveDb(name, questions, images, desc);
+    dbs = await getDbList();
     toggleAddDbPopup();
     discardTempDB();
   }
@@ -85,7 +79,7 @@
 
   // when a db is loaded, it's stored here before saving
   let tempQuestions: Question[] = $state([]);
-  let tempImages: [string, string][] = $state([]);
+  let tempImages: [string, File][] = $state([]);
   let tempName: string = $state("");
   let tempDesc: string = $state("");
   let tempDesiredLen: number | null = null;
@@ -186,16 +180,10 @@
         });
         reader.readAsText(file);
       } else if (file.name.includes("jpg") || file.name.includes("png")) {
-        const reader = new FileReader();
-        reader.addEventListener("load", (event: ProgressEvent<FileReader>) => {
-          let fileNameRelative = file.name;
-          fileNameRelative = fileNameRelative.split("/").pop()!;
-          if (event.target?.result) {
-            tempImages.push([fileNameRelative, event.target.result as string]);
-          }
-          folderFilesRead++;
-        });
-        reader.readAsDataURL(file);
+        let fileNameRelative = file.name;
+        fileNameRelative = fileNameRelative.split("/").pop()!;
+        tempImages.push([fileNameRelative, file]);
+        folderFilesRead++;
       }
     }
     console.log(tempQuestions);

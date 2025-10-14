@@ -2,10 +2,10 @@
   import type { Question } from "../lib/types";
 
   export let question: Question;
-  export let image: [string, string] | undefined;
+  export let image: string | undefined;
   export let checked: boolean;
   // parent does `bind:onNextCallback` and calls it when moving on,
-  // but because of our {#key}, it’s enough to let Svelte remount.
+  // but because of our {#key}, it's enough to let Svelte remount.
   export const onNextCallback = () => {};
   export const onCheckAnswersCallback = () =>
     markedAnswers.every((v, i) => v === question.correctAnswers[i]);
@@ -44,7 +44,7 @@
       <img
         alt="Ilustracja do pytania"
         style="max-width:80%; margin:24px"
-        src={image[1]}
+        src={image}
       />
     {/if}
 

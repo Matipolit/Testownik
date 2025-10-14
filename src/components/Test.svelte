@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import Question from "./Question.svelte";
   import type { Question as QuestionType } from "../lib/types";
   import {
@@ -8,7 +9,7 @@
     RotateCcw,
   } from "@lucide/svelte";
 
-  let { db, images }: { db: QuestionType[]; images: [string, string][] } =
+  let { db, images }: { db: QuestionType[]; images: [string, Blob][] } =
     $props();
 
   let currQuestion: number = $state(0);
@@ -21,7 +22,40 @@
   let checkAnswersCallback: () => boolean = $state(() => false);
   let ended: boolean = $state(false);
   let skipQuestionNum: number = $state(1);
-  let curr_image: [string, string] | undefined = $state(undefined);
+  let curr_image: string | undefined = $state(undefined);
+
+  // Create object URLs for images
+  let imageUrls = new Map<string, string>();
+
+  $effect(() => {
+    // Revoke old URLs to prevent memory leaks
+    for (const url of imageUrls.values()) {
+      URL.revokeObjectURL(url);
+    }
+    imageUrls.clear();
+
+    if (images) {
+      for (const [name, blob] of images) {
+        imageUrls.set(name, URL.createObjectURL(blob));
+      }
+    }
+
+    // Update current image if needed
+    if (db[currQuestion]?.hasImage) {
+      const imagePath = db[currQuestion].imagePath;
+      if (imagePath != null) {
+        curr_image = imageUrls.get(imagePath);
+      }
+    } else {
+      curr_image = undefined;
+    }
+  });
+
+  onDestroy(() => {
+    for (const url of imageUrls.values()) {
+      URL.revokeObjectURL(url);
+    }
+  });
 
   function nextQuestion(): void {
     questionCorrects.push(correct);
@@ -36,9 +70,10 @@
       console.log("Calling next callback");
       nextCallback();
       if (db[currQuestion].hasImage) {
-        curr_image = images.find(
-          (img) => img[0] === db[currQuestion].imagePath
-        );
+        const imagePath = db[currQuestion].imagePath;
+        if (imagePath != null) {
+          curr_image = imageUrls.get(imagePath);
+        }
       } else {
         curr_image = undefined;
       }
@@ -60,7 +95,10 @@
     ended = false;
     skipQuestionNum = 1;
     if (db[0].hasImage) {
-      curr_image = images.find((img) => img[0] === db[0].imagePath);
+      const imagePath = db[0].imagePath;
+      if (imagePath != null) {
+        curr_image = imageUrls.get(imagePath);
+      }
     } else {
       curr_image = undefined;
     }

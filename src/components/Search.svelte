@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import uFuzzy from "@leeoniya/ufuzzy";
   import type { Question } from "../lib/types";
   import { SearchIcon } from "@lucide/svelte";
 
-  let { db } = $props<{ db: Question[] }>();
+  let { db, images } = $props<{ db: Question[]; images: [string, Blob][] }>();
 
   let phrase: string = $state("");
   let includeAnswers: boolean = $state(false);
@@ -40,6 +41,28 @@
   $effect(() => {
     search();
   });
+
+  let imageUrls = new Map<string, string>();
+
+  $effect(() => {
+    // Revoke old URLs to prevent memory leaks
+    for (const url of imageUrls.values()) {
+      URL.revokeObjectURL(url);
+    }
+    imageUrls.clear();
+
+    if (images) {
+      for (const [name, blob] of images) {
+        imageUrls.set(name, URL.createObjectURL(blob));
+      }
+    }
+  });
+
+  onDestroy(() => {
+    for (const url of imageUrls.values()) {
+      URL.revokeObjectURL(url);
+    }
+  });
 </script>
 
 <div class="bg-gray-800 p-2 overflow-auto flex-grow min-h-0 flex flex-col">
@@ -64,7 +87,14 @@
   <div class="flex flex-col gap-4 mt-4 text-gray-100">
     {#each results as result}
       <div class="bg-gray-700 p-2">
-        <p class="mb-2">{result.title}</p>
+        <p class="mb-2"><b>{result.number}</b>. {result.title}</p>
+        {#if result.hasImage && result.imagePath != null}
+          <img
+            src={imageUrls.get(result.imagePath)!}
+            alt={`Image for question ${result.number}`}
+          />
+          <p>{result.imagePath}</p>
+        {/if}
         <ul>
           {#each result.answers as answer, y}
             {#if result.correctAnswers[y]}
