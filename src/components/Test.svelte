@@ -168,7 +168,7 @@
             <b class="text-red-300">{negativePoints}</b>
         </p>
 
-        <div class="bg-gray-700 p-2 text-sm">
+        <div class="bg-gray-700 p-2 text-sm hidden md:block">
             <p class="font-semibold mb-1">Skróty klawiszowe:</p>
             <ul class="text-xs space-y-0.5">
                 <li>

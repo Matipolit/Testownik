@@ -83,7 +83,7 @@
                     }}
                 >
                     <kbd
-                        class="bg-gray-600 px-2 py-1 rounded text-xs font-mono min-w-6 text-center"
+                        class="bg-gray-600 px-2 py-1 rounded text-xs font-mono min-w-6 text-center hidden md:block"
                         >{getKeyboardLetter(i)}</kbd
                     >
                     <input
