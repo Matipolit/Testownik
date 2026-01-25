@@ -4,6 +4,8 @@
     export let question: Question;
     export let image: string | undefined;
     export let checked: boolean;
+    export let onMarkAnswer: (index: number) => void = () => {};
+
     // parent does `bind:onNextCallback` and calls it when moving on,
     // but because of our {#key}, it's enough to let Svelte remount.
     export const onNextCallback = () => {};
@@ -13,6 +15,7 @@
         if (!checked && index >= 0 && index < markedAnswers.length) {
             markedAnswers[index] = !markedAnswers[index];
         }
+        return markedAnswers.some((answer) => answer === true);
     };
 
     let markedAnswers: boolean[] = [];
@@ -74,11 +77,11 @@
                     ]}"
                     onclick={() => {
                         if (checked) return;
-                        markedAnswers[i] = !markedAnswers[i];
+                        onMarkAnswer(i);
                     }}
                     onkeydown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
-                            markedAnswers[i] = !markedAnswers[i];
+                            onMarkAnswer(i);
                         }
                     }}
                 >
